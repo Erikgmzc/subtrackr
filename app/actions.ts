@@ -6,14 +6,25 @@ import {redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase';
 
 export async function deleteSubscription(id: string) {
+    // 1. IMPORTANTE: Usar el cliente que sabe leer las cookies de sesión
+    const supabase = await createClient();
+
+    console.log("Intentando borrar suscripción ID:", id);
+
     const { error } = await supabase
         .from('subscriptions')
         .delete()
-        .eq('id', id)
+        .eq('id', id);
 
-        if (!error) {
-            revalidatePath('/') // Esto limpia la caché y actualiza la lista
-        }
+    if (error) {
+        // Si hay un error de RLS, lo veremos aquí en el terminal
+        console.error("Error al borrar en Supabase:", error.message);
+        return;
+    }
+
+    // 2. Si no hay error, refrescamos la página
+    console.log("Borrado con éxito");
+    revalidatePath('/');
 }
 
 export async function login(formData: FormData) {
