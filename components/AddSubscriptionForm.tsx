@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 // 1. CAMBIO IMPORTANTE: Usamos el cliente de navegador de SSR
 import { createBrowserClient } from '@supabase/ssr';
 import { Plus, X, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 // 1. Catálogo de aplicaciones populares
 const PRESETS = [
@@ -35,12 +36,15 @@ export default function AddSubscriptionForm({ userId }: { userId: string }) {
     const price = formData.get('price');
     const next_billing_date = formData.get('date');
 
-    console.log("Enviando con userId:", userId);
+    //console.log("Enviando con userId:", userId); BORRAAAAAAAAAAAAAAAAAAAAAAAAAAR LOGGER
 
     if (!name || !price || !category || !next_billing_date) {
-      alert("Por favor, rellena todos los campos");
+      toast.error("Por favor, rellena todos los campos");
       return;
     }
+
+    const toastId = toast.loading("Guardando Subscripcion...");
+
 
     // 3. El insert ahora irá con las credenciales de sesión automáticas
     const { error } = await supabase
@@ -54,9 +58,11 @@ export default function AddSubscriptionForm({ userId }: { userId: string }) {
       }]);
 
     if (error) {
-      console.error("Error de Supabase:", error.message);
-      alert("Error al guardar: " + error.message);
+      // console.error("Error de Supabase:", error.message); BORRAAAAAAAAAAAARRRRRRR LOGGEEEEEEEEEEEEER
+
+      toast.error("Error al guardar: " + error.message, { id: toastId});
     } else {
+      toast.success(`¡${name} añadido correctamente!` , { id: toastId})
       setIsOpen(false);
       setSelectedPreset(null);
       setIsCustom(false);
