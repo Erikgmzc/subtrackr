@@ -15,27 +15,54 @@ const getCategoryStyle = (category: string) => {
   return styles[category?.toLowerCase()] || styles.otros;
 };
 
-export default async function Dashboard() {
+
+const getDaysUntil = (dateString: string) => {
+
+  const today = new Date();
+  const billingDate = new Date(dateString);
+  const diffTime = billingDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+
+};
+
+
+export default async function Dashboard({ searchParams, }: { searchParams: { category?: string};}) {
+
   const supabase = await createClient();
+  const categoryFilter = searchParams.category;
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     redirect('/login');
   }
 
+  //Buscador,Filtrador de subscripciones actualizado 
+
+  let query = supabase.from('subscriptions').select('*');
+
+    if (categoryFilter && categoryFilter !== 'todas') {
+      query = query.eq('category' , categoryFilter);
+
+    }
+    const { data: subscriptions, error } = await query;
+
   // Petición de datos
-  const { data: subscriptions, error } = await supabase
+  /*const { data: subscriptions, error } = await supabase
     .from('subscriptions')
     .select('*');
 
   if (error) return <p className="p-8 text-red-500">Error cargando suscripciones.</p>;
-
+*/
   // Cálculos
   const totalMensual = subscriptions?.reduce((acc, sub) => acc + Number(sub.price), 0) || 0;
   const totalAnual = totalMensual * 12;
-  const subMasCara = subscriptions?.length 
-    ? [...subscriptions].sort((a, b) => b.price - a.price)[0] 
+  const subMasCara = subscriptions?.length
+    ? [...subscriptions].sort((a, b) => b.price - a.price)[0]
     : null;
+
+
+    
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] p-8">
@@ -69,18 +96,38 @@ export default async function Dashboard() {
             {subMasCara && <p className="text-sm font-bold text-red-500">{subMasCara.price} €/mes</p>}
           </div>
         </section>
+        
 
-        <AddSubscriptionForm userId ={user.id} />
+        <div className='flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide'>
+        {['todas' , 'streaming' , 'gym' , 'software' , 'otros'].map((cat) => (
+
+          <a 
+          key={cat}
+          href={cat === 'todas' ? '/' : `?category=${cat}`}
+          className={`px-4 py-2 rounded-full text-xs font-bold capitalize transition-all ${(categoryFilter === cat || (!categoryFilter && cat === 'todas'))
+            ? "bg-slate-900 text-white shadow-md"
+            : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300"
+          }`}
+          >
+            {cat}
+          </a>
+
+        ))}
+        </div>
+
+        <AddSubscriptionForm userId={user.id} />
 
         {/* --- 2. LISTA CON ESTILOS DINÁMICOS Y ESTADO VACÍO --- */}
         <div className="grid gap-4 mt-8">
           {subscriptions && subscriptions.length > 0 ? (
             subscriptions.map((sub) => {
               const categoryStyle = getCategoryStyle(sub.category);
-              
+              const daysLeft = getDaysUntil(sub.next_billing_date);
+              const isUrgent = daysLeft >= 0 && daysLeft <= 3;
+
               return (
-                <div 
-                  key={sub.id} 
+                <div
+                  key={sub.id}
                   className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center group hover:shadow-md hover:border-blue-100 transition-all duration-300"
                 >
                   {/* Izquierda: Icono dinámico */}
@@ -96,16 +143,35 @@ export default async function Dashboard() {
                     </div>
                   </div>
 
+
+
+
                   {/* Derecha: Precio y Acciones */}
-                  <div className="flex items-center gap-8">
+                  <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="text-2xl font-black text-slate-900">
-                        {sub.price}<span className="text-sm ml-0.5 font-medium text-slate-400">€</span>
+                      <p className="text-xl font-bold text-slate-900">
+                        {sub.price} €
                       </p>
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">
-                        Cobro: {new Date(sub.next_billing_date).toLocaleDateString()}
-                      </p>
+
+                      {/* ETIQUETA DE DÍAS RESTANTES */}
+                      <div className="mt-1">
+                        {daysLeft < 0 ? (
+                          <span className="text-[10px] font-bold bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full uppercase">
+                            Cobrado
+                          </span>
+                        ) : (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight ${isUrgent
+                              ? "bg-orange-100 text-orange-600 animate-pulse"
+                              : "bg-blue-50 text-blue-500"
+                            }`}>
+                            {daysLeft === 0 ? "Hoy" : `En ${daysLeft} días`}
+                          </span>
+                        )}
+                      </div>
                     </div>
+
+
+
 
                     <form action={deleteSubscription.bind(null, sub.id)}>
                       <button className="text-slate-200 hover:text-red-500 hover:bg-red-50 p-3 rounded-xl transition-all opacity-0 group-hover:opacity-100">
