@@ -3,6 +3,7 @@ import AddSubscriptionForm from '@/components/AddSubscriptionForm';
 import { deleteSubscription } from './actions';
 import { createClient } from '@/utils/supabase';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 // --- 1. FUNCIONES DE APOYO ---
 const getCategoryStyle = (category: string) => {
@@ -27,7 +28,7 @@ const getDaysUntil = (dateString: string) => {
 export default async function Dashboard({ searchParams }: { searchParams: { category?: string } }) {
   const supabase = await createClient();
   const categoryFilter = searchParams.category;
-  
+
   // 1. Verificación de usuario
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -41,7 +42,7 @@ export default async function Dashboard({ searchParams }: { searchParams: { cate
   if (categoryFilter && categoryFilter !== 'todas') {
     query = query.eq('category', categoryFilter);
   }
-  
+
   // Ordenar por fecha más próxima por defecto
   query = query.order('next_billing_date', { ascending: true });
 
@@ -98,19 +99,19 @@ export default async function Dashboard({ searchParams }: { searchParams: { cate
         {/* --- Filtros Rápidos --- */}
         <div className="flex gap-3 mb-8 overflow-x-auto pb-2 scrollbar-hide">
           {['todas', 'streaming', 'gym', 'software', 'otros'].map((cat) => {
-            const isActive = categoryFilter === cat || (!categoryFilter && cat === 'todas');
+            const isActive = categoryFilter === cat;
             return (
-              <a
+              <Link
                 key={cat}
                 href={cat === 'todas' ? '/' : `/?category=${cat}`}
-                className={`px-5 py-2.5 rounded-full text-xs font-black capitalize transition-all border ${
-                  isActive
+                scroll={false} // Evita que la página salte arriba al filtrar
+                className={`px-5 py-2.5 rounded-full text-xs font-black capitalize transition-all border ${isActive
                     ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100 scale-105"
                     : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                }`}
+                  }`}
               >
                 {cat}
-              </a>
+              </Link>
             );
           })}
         </div>
@@ -162,16 +163,21 @@ export default async function Dashboard({ searchParams }: { searchParams: { cate
                               Cobrado
                             </span>
                           ) : (
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight ${
-                              isUrgent ? "bg-orange-100 text-orange-600 animate-pulse" : "bg-blue-50 text-blue-500"
-                            }`}>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight ${isUrgent ? "bg-orange-100 text-orange-600 animate-pulse" : "bg-blue-50 text-blue-500"
+                              }`}>
                               {daysLeft === 0 ? "Hoy" : `En ${daysLeft} días`}
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <form action={deleteSubscription.bind(null, sub.id)}>
+                      <form action={deleteSubscription.bind(null, sub.id)} 
+                      onSubmit={(e) => {
+                        if (!confirm(`¿Seguro que quieres eliminar ${sub.name}?`)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      >
                         <button className="text-slate-200 hover:text-red-500 hover:bg-red-50 p-4 rounded-2xl transition-all opacity-100 sm:opacity-0 group-hover:opacity-100">
                           <Trash2 size={24} />
                         </button>
@@ -185,5 +191,5 @@ export default async function Dashboard({ searchParams }: { searchParams: { cate
         </div>
       </div>
     </main>
-  ); 
+  );
 }
