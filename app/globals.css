@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
+/* 1. Valores por defecto (Modo Claro) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc; /* slate-50 */
+  --foreground: #0f172a; /* slate-900 */
+}
+
+/* 2. Valores cuando el botón activa la clase .dark */
+.dark {
+  --background: #020617; /* slate-950 */
+  --foreground: #f1f5f9; /* slate-100 */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* 3. Estilos base */
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Forzamos que Tailwind use la clase .dark para sus variantes */
+@variant dark (&:where(.dark, .dark *));
+
+
+/* --- ESTILOS PARA EL CALENDARIO MODERNO --- */
+
+.react-datepicker {
+  @apply font-sans border border-slate-200 dark:border-slate-700 shadow-xl rounded-2xl overflow-hidden bg-white dark:bg-slate-800;
+}
+
+.react-datepicker__header {
+  @apply bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700;
+}
+
+/* Selector de mes y año (Dropdowns) */
+.react-datepicker__month-select,
+.react-datepicker__year-select {
+  @apply bg-slate-100 dark:bg-slate-700 border-none rounded-lg p-1 font-bold text-xs outline-none text-slate-800 dark:text-slate-100 cursor-pointer;
+  margin: 2px;
+}
+
+.react-datepicker__day--selected {
+  background-color: #2563eb !important; /* Azul intenso */
+  color: white !important;
+  border-radius: 0.5rem !important;
+}
+
+.react-datepicker__day:hover {
+  @apply bg-slate-100 dark:bg-slate-700 rounded-lg;
+}
+
+/* Arreglo para que los dropdowns no se vean blancos en dark mode */
+.react-datepicker__header__dropdown {
+  @apply py-2 flex justify-center gap-2;
 }

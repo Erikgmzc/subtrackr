@@ -1,3 +1,5 @@
+
+import SocialLogin from "@/components/SocialLogin";
 import { login } from "../actions";
 
 export default function LoginPage() {
@@ -39,6 +41,8 @@ export default function LoginPage() {
               placeholder="••••••••" 
             />
           </div>
+
+          <SocialLogin></SocialLogin>
 
           <button 
             formAction={login}
